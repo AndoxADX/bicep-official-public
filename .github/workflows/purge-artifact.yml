@@ -14,7 +14,7 @@ jobs:
   on-success:
     runs-on: ubuntu-latest
     name: Delete artifact
-    if: github.event.workflow_run.head_branch == 'main' # feel free to take this out if you don't need it
+    # if: github.event.workflow_run.head_branch == 'main' # feel free to take this out if you don't need it
     steps:
       - id: get-id
         run: | # grab the id of the artifact we just created

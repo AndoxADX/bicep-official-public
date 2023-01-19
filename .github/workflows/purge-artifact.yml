@@ -1,0 +1,32 @@
+name: Test
+
+on:
+  workflow_run:
+    branches: [main]
+    workflows: [nonprod,prod,test]
+    types:
+      - completed
+jobs:
+  on-success:
+    runs-on: ubuntu-latest
+    name: Delete artifact
+    if: github.event.workflow_run.head_branch == 'main' # feel free to take this out if you don't need it
+    steps:
+      - id: get-id
+        run: | # grab the id of the artifact we just created
+          echo "ARTIFACT_ID=$(gh api -H 'Accept: application/vnd.github+json'   ${{github.event.workflow_run.artifacts_url}} --jq .artifacts[].id)" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_REPO_ACCESS_PAT }}
+      - run: |
+          echo "artifact id is ${{ env.ARTIFACT_ID}}"
+          echo "run url is ${{github.event.workflow_run.artifacts_url}}"
+      - id: delete-artifact
+        run: | # https://docs.github.com/en/rest/actions/artifacts?apiVersion=2022-11-28#delete-an-artifact
+          gh api --method DELETE -H 'Accept: application/vnd.github+json' /repos/${{github.repository}}/actions/artifacts/${{env.ARTIFACT_ID}}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_REPO_ACCESS_PAT }}
+  on-failure:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - run: echo 'The triggering workflow failed'
